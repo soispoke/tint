@@ -199,7 +199,6 @@ impl Provider {
 
         Ok((
             IPrivacyPool::Operation {
-                // oldRoot: fr_to_b256(old_root),
                 startAggregationIndex: start_aggregation_index,
                 endAggregationIndex: end_aggregation_index,
                 newRoot: fr_to_b256(outputs.new_root),

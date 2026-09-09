@@ -3,9 +3,63 @@ use ark_bn254::Bn254;
 use ark_groth16::Proof;
 
 sol!(
+    uint128 constant N_CONST = 7;
+    uint128 constant N_INPUTS = 5;
+    uint128 constant N_OUTPUTS = 5;
+    uint128 constant N_WITHDRAWALS = 2;
+    uint128 constant N_PUB = N_CONST + 2 * N_INPUTS + N_OUTPUTS + 2 * N_WITHDRAWALS;
+
     #[derive(Debug)]
-    Tint,
-    "../../contracts/out/Tint.sol/Tint.json"
+    library ProofLib {
+        struct Proof {
+            uint256[8] proof;
+        }
+    }
+
+    #[derive(Debug)]
+    interface IPrivacyPool {
+        struct Operation {
+            uint128 startAggregationIndex;
+            bytes32 newRoot;
+            uint128 endAggregationIndex;
+            bytes32 operationHash;
+            bytes32[N_INPUTS] nullifiers;
+            address[N_INPUTS] spendabilityAddresses;
+            bytes32[N_OUTPUTS] commitmentsOut;
+            uint128[N_WITHDRAWALS] unshieldAmounts;
+            address[N_WITHDRAWALS] unshieldAssets;
+            Context context;
+            ProofLib.Proof proof;
+            /// @dev Hybrid-compression challenge for `proof` (see
+            /// `ProofLib.toCompressedSignals`).
+            uint256 beta;
+        }
+
+        struct Context {
+            bytes[N_INPUTS] spendabilityInputs;
+            bytes[N_OUTPUTS] ciphertexts;
+            address[N_WITHDRAWALS] unshieldRecipients;
+        }
+
+    }
+
+    #[derive(Debug)]
+    contract Tint {
+        event Deposited(bytes32 commitment, address indexed asset, uint128 amount, bytes encryptedPartial);
+        event Committed(bytes32 commitment, bytes encryptedNote);
+        event Nullified(bytes32 nullifier);
+        event Withdrawn(address indexed asset, uint128 amount, address indexed recipient);
+        event AggregationAdvanced(uint128 index, bytes32 root);
+
+        function deposit(address asset, uint128 amount, bytes32 partialCommitment, bytes calldata encryptedPartial) external;
+        function operate(IPrivacyPool.Operation calldata operation) public;
+        function preVerify(bytes32 slot, IPrivacyPool.Operation calldata operation) public;
+        function executePreVerified(bytes32 slot, IPrivacyPool.Operation calldata operation) public;
+        function latestRootIndex() external view returns (uint128);
+        function getRoot(uint128 index) external view returns (bytes32);
+        function computePublicSignals(IPrivacyPool.Operation calldata op) public view returns (uint256[N_PUB] memory);
+        function verifyOperation(IPrivacyPool.Operation calldata op) public view;
+    }
 );
 
 impl From<Proof<Bn254>> for ProofLib::Proof {

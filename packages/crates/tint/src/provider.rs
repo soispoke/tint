@@ -19,7 +19,6 @@ use crate::{
         JoinSplit, JoinSplitCircuit, JoinSplitResult, K, N_INPUTS, N_OUTPUTS, N_WITHDRAWALS,
         TREE_DEPTH,
     },
-    database::DatabaseError,
     fr::{fr_to_b256, fr_to_u256},
     indexer::Indexer,
     merkle_tree::InclusionProof,
@@ -79,12 +78,11 @@ impl Provider {
 
     /// Adds an account which will be indexed and made available to authorize
     /// spending its own notes in [`Self::operate`]/[`Self::public_inputs`].
-    pub async fn add_account(&mut self, account: Account) -> Result<(), DatabaseError> {
+    pub async fn add_account(&mut self, account: Account) {
         self.indexer
             .add_account(account.viewing().clone(), account.nullifying().clone())
-            .await?;
+            .await;
         self.accounts.push(account);
-        Ok(())
     }
 
     /// Returns the notes owned by `receiver`.

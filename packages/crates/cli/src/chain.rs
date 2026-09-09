@@ -15,8 +15,8 @@ use rand_core::OsRng;
 use tint::{
     account::{Account, receiver::Receiver},
     circuit::join_split::JoinSplitCircuit,
-    database::memory::MemoryDatabase,
     indexer::{Indexer, syncer::RpcSyncer, verifier::RpcVerifier},
+    kv::memory::MemoryDatabase,
     note::{asset::AssetId, commitment::NullifiableCommitment},
     provider::Provider as TintProvider,
 };
@@ -64,7 +64,7 @@ pub async fn connect(
 
     let artifacts = config::load_circuit::<JoinSplitCircuit>("join_split")?;
     let mut tint_provider = TintProvider::new(indexer, artifacts);
-    tint_provider.add_account(account.clone()).await?;
+    tint_provider.add_account(account.clone()).await;
 
     tracing::info!("Syncing with chain...");
     tint_provider.sync().await?;

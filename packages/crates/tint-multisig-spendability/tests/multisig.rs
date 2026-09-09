@@ -8,8 +8,8 @@ use k256::{ecdsa::SigningKey, elliptic_curve::Generate};
 use tint::{
     account::{Account, keys::Keys, spending::NoopSpendingAccount},
     circuit::join_split::JoinSplitCircuit,
-    database::memory::MemoryDatabase,
     indexer::{Indexer, syncer::RpcSyncer, verifier::RpcVerifier},
+    kv::memory::MemoryDatabase,
     note::asset::AssetId,
     provider::Provider,
 };
@@ -69,8 +69,8 @@ async fn multisig() {
     let indexer = Indexer::new(syncer, verifier, database).await.unwrap();
 
     let mut tint_provider = Provider::new(indexer, artifacts);
-    tint_provider.add_account(account_1.clone()).await.unwrap();
-    tint_provider.add_account(account_2.clone()).await.unwrap();
+    tint_provider.add_account(account_1.clone()).await;
+    tint_provider.add_account(account_2.clone()).await;
 
     // Approve Tint to pull the deposits.
     let _ = token

@@ -32,7 +32,6 @@ impl<F: PrimeField> Matrices<F> {
     }
 
     /// Generates the constraint matrices for the generic circuit `C`.
-    #[must_use]
     pub fn generate<C: ConstraintSynthesizer<F> + Default>() -> Result<Self, SynthesisError> {
         let cs = ConstraintSystem::new_ref();
         cs.set_optimization_goal(ark_relations::gr1cs::OptimizationGoal::Constraints);

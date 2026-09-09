@@ -166,7 +166,6 @@ impl BaseCommitment {
         }
     }
 
-    #[must_use]
     pub fn from_encrypted(
         encrypted: &[u8],
         my_priv: &EncryptionKey,
@@ -201,7 +200,6 @@ impl BaseCommitment {
         poseidon2_compress(&[nullifier_key.0, self.hash()])
     }
 
-    #[must_use]
     pub fn encrypt<R: RngCore + CryptoRng>(
         &self,
         keys: &[EncryptionPubKey],
@@ -218,12 +216,11 @@ impl PartialCommitment {
     pub fn new(spendability_hash: Fr, nullifier_pub_key: NullifierPubKey, random: B256) -> Self {
         PartialCommitment {
             spendability_hash,
-            nullifier_pub_key,
             random,
+            nullifier_pub_key,
         }
     }
 
-    #[must_use]
     pub fn from_encrypted(
         encrypted: &[u8],
         my_priv: &EncryptionKey,
@@ -233,7 +230,6 @@ impl PartialCommitment {
         Ok(postcard::from_bytes(&plaintext)?)
     }
 
-    #[must_use]
     pub fn encrypt<R: RngCore + CryptoRng>(
         &self,
         keys: &[EncryptionPubKey],

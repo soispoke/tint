@@ -14,13 +14,13 @@ use crate::{
         join_split::{K, SUBTREE_PATH_LENGTH, SUBTREE_SIZE, TREE_DEPTH},
         poseidon2::poseidon2_compress,
     },
-    database::{Database, DatabaseError, TintDatabase},
     fr::b256_to_fr,
     indexer::{
         indexed_account::IndexedAccount,
         syncer::{Event, Syncer},
         verifier::Verifier,
     },
+    kv::{KvStore, TintDatabase},
     merkle_tree::{InclusionProof, IncrementalMerkleTree, MerkleTreeError, SubtreeAppendProof},
     note::commitment::NullifiableCommitment,
 };
@@ -32,7 +32,7 @@ use crate::{
 pub struct Indexer {
     syncer: Arc<dyn Syncer + Send + Sync>,
     verifier: Arc<dyn Verifier + Send + Sync>,
-    database: Arc<dyn Database + Send + Sync>,
+    database: Arc<dyn KvStore + Send + Sync>,
 
     state: IndexerState,
     accounts: Vec<IndexedAccount>,
@@ -54,8 +54,6 @@ pub struct IndexerState {
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
-    #[error("database error: {0}")]
-    Database(#[from] DatabaseError),
     #[error("merkle tree error: {0}")]
     MerkleTree(#[from] MerkleTreeError),
     #[error("syncer error: {0}")]
@@ -72,9 +70,9 @@ impl Indexer {
     pub async fn new(
         syncer: Arc<dyn Syncer + Send + Sync>,
         verifier: Arc<dyn Verifier + Send + Sync>,
-        database: Arc<dyn Database + Send + Sync>,
+        database: Arc<dyn KvStore + Send + Sync>,
     ) -> Result<Self, IndexerError> {
-        let state = database.load_indexer().await?.unwrap_or(IndexerState {
+        let state = database.load_indexer().await.unwrap_or(IndexerState {
             tree: IncrementalMerkleTree::new(),
             total_staged: 0,
             staged_commitments: Vec::new(),
@@ -127,14 +125,9 @@ impl Indexer {
     }
 
     /// Adds an account which will be indexed.
-    pub async fn add_account(
-        &mut self,
-        viewing: ViewingAccount,
-        nullifying: NullifyingAccount,
-    ) -> Result<(), DatabaseError> {
-        let account = IndexedAccount::new(viewing, nullifying, self.database.clone()).await?;
+    pub async fn add_account(&mut self, viewing: ViewingAccount, nullifying: NullifyingAccount) {
+        let account = IndexedAccount::new(viewing, nullifying, self.database.clone()).await;
         self.accounts.push(account);
-        Ok(())
     }
 
     /// Returns an inclusion proof for `commitment`, if it's present in the tree.
@@ -180,7 +173,7 @@ impl Indexer {
             .await
             .map_err(IndexerError::Verifier)?;
 
-        self.save().await?;
+        self.save().await;
         Ok(())
     }
 
@@ -253,12 +246,10 @@ impl Indexer {
         Ok(proof)
     }
 
-    async fn save(&self) -> Result<(), DatabaseError> {
-        self.database.set_indexer(&self.state).await?;
+    async fn save(&self) {
+        self.database.set_indexer(&self.state).await;
         for account in &self.accounts {
-            account.save().await?;
+            account.save().await;
         }
-
-        Ok(())
     }
 }
